@@ -37,8 +37,20 @@ else:
 
 model = model.to(args.device)
 
-test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1",
-                      positive_dist_threshold=args.positive_dist_threshold)
+if args.dataset_folder.split("/")[-3] != "tokyo247":
+    test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1",
+                        positive_dist_threshold=args.positive_dist_threshold)
 
-recalls, recalls_str = test.test(args, test_ds, model)
-logging.info(f"{test_ds}: {recalls_str}")
+    recalls, recalls_str = test.test(args, test_ds, model)
+    logging.info(f"{test_ds}: {recalls_str}")
+
+else:
+    test_ds = TestDataset(args.test_set_folder, queries_folder="queries",
+                        positive_dist_threshold=args.positive_dist_threshold)
+
+    recalls, recalls_str, recalls_day, recalls_sunset, recalls_night = test.test_tokyo(args, test_ds, model)
+
+    logging.info(f"Recalls on {test_ds}: {recalls_str}")
+    logging.info(f"Recalls on {test_ds}: {recalls_day}")
+    logging.info(f"Recalls on {test_ds}: {recalls_sunset}")
+    logging.info(f"Recalls on {test_ds}: {recalls_night}")
