@@ -37,8 +37,8 @@ else:
 
 model = model.to(args.device)
 
-if args.dataset_folder.split("/")[-3] != "tokyo247":
-    test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1",
+if args.dataset_folder.split("/")[-3] == "sf_xl_small":
+    test_ds = TestDataset(args.test_set_folder, queries_folder="queries_night",
                         positive_dist_threshold=args.positive_dist_threshold)
 
     recalls, recalls_str = test.test(args, test_ds, model)
