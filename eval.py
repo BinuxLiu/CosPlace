@@ -1,4 +1,5 @@
 
+import os
 import sys
 import torch
 import logging
@@ -10,6 +11,7 @@ import parser
 import commons
 from model import network
 from datasets.test_dataset import TestDataset
+from datasets.teach_dataset import TeachDataset
 
 torch.backends.cudnn.benchmark = True  # Provides a speedup
 
@@ -37,14 +39,15 @@ else:
 
 model = model.to(args.device)
 
-if args.dataset_folder.split("/")[-3] == "sf_xl_small":
-    test_ds = TestDataset(args.test_set_folder, queries_folder="queries_night",
-                        positive_dist_threshold=args.positive_dist_threshold)
+if args.dataset_folder.split("/")[-3] == "sf_xl":
 
-    recalls, recalls_str = test.test(args, test_ds, model)
-    logging.info(f"{test_ds}: {recalls_str}")
+        test_ds = TestDataset(args.test_set_folder, queries_folder="queries_night",
+                            positive_dist_threshold=args.positive_dist_threshold)
 
-else:
+        recalls, recalls_str = test.test(args, test_ds, model)
+        logging.info(f"{test_ds}: {recalls_str}")
+
+elif args.dataset_folder.split("/")[-3] == "tokyo247":
     test_ds = TestDataset(args.test_set_folder, queries_folder="queries",
                         positive_dist_threshold=args.positive_dist_threshold)
 
@@ -54,3 +57,7 @@ else:
     logging.info(f"Recalls on {test_ds}: {recalls_day}")
     logging.info(f"Recalls on {test_ds}: {recalls_sunset}")
     logging.info(f"Recalls on {test_ds}: {recalls_night}")
+
+if args.use_kd:
+    test_ds = TeachDataset(args.train_set_folder)
+    test.test_for_teach(args, test_ds, model)

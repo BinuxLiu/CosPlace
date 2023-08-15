@@ -129,3 +129,17 @@ def test_tokyo(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tup
     recalls_str_night = ", ".join([f"R@{val}: {rec:.1f}" for val, rec in zip(RECALL_VALUES, recalls_night)])
 
     return recalls, recalls_str,  recalls_str_day, recalls_str_sunset, recalls_str_night
+
+def test_for_teach(args: Namespace, eval_ds: Dataset, model: torch.nn.Module):
+    """Compute descriptors of the given dataset and compute the recalls."""
+    
+    model = model.eval()
+    with torch.no_grad():
+        logging.debug("Extracting database descriptors for evaluation/testing")
+        dataloader = DataLoader(dataset=eval_ds, num_workers=args.num_workers,
+                                         batch_size=args.infer_batch_size, pin_memory=(args.device == "cuda"))
+        for images, image_paths, indices in tqdm(dataloader, ncols=100):
+            descriptors = model(images.to(args.device))
+            descriptors = descriptors.cpu().numpy()
+            for idx, image_path in enumerate(image_paths):
+                np.save(image_path.replace("train_d", "train_feat").replace(".jpg", ".npy"), descriptors[idx])
