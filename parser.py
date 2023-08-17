@@ -57,6 +57,8 @@ def parse_arguments(is_training: bool = True):
     # Knowledge distillation parameters
     parser.add_argument("--use_kd", action="store_true", 
                         help="extract teacher's features and build teacher-student model")
+    parser.add_argument('--T', type=float, default=4.0, help='temperature for ST')
+    
     
     args = parser.parse_args()
     
@@ -71,21 +73,21 @@ def parse_arguments(is_training: bool = True):
     if not os.path.exists(args.dataset_folder):
         raise FileNotFoundError(f"Folder {args.dataset_folder} does not exist")
     
+    args.test_set_folder = os.path.join(args.dataset_folder, "test")
+    if not os.path.exists(args.test_set_folder):
+        raise FileNotFoundError(f"Folder {args.test_set_folder} does not exist")
+
     if is_training:
         args.train_set_folder = os.path.join(args.dataset_folder, "train")
         if not os.path.exists(args.train_set_folder):
             raise FileNotFoundError(f"Folder {args.train_set_folder} does not exist")
-        
         args.val_set_folder = os.path.join(args.dataset_folder, "val")
         if not os.path.exists(args.val_set_folder):
-            raise FileNotFoundError(f"Folder {args.val_set_folder} does not exist")
-    if not args.use_kd:
-        args.test_set_folder = os.path.join(args.dataset_folder, "test")
-        if not os.path.exists(args.test_set_folder):
-            raise FileNotFoundError(f"Folder {args.test_set_folder} does not exist")
+            raise FileNotFoundError(f"Folder {args.val_set_folder} does not exist")  
     else:
-        args.train_set_folder = os.path.join(args.dataset_folder, "train_d")
-        if not os.path.exists(args.train_set_folder):
-            raise FileNotFoundError(f"Folder {args.train_set_folder} does not exist")
+        if args.use_kd:
+            args.train_set_folder = os.path.join(args.dataset_folder, "train_d")
+            if not os.path.exists(args.train_set_folder):
+                raise FileNotFoundError(f"Folder {args.train_set_folder} does not exist")
         
     return args
