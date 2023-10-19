@@ -61,7 +61,8 @@ def get_backbone(backbone_name : str) -> Tuple[torch.nn.Module, int]:
             if name == "layer3":  # Freeze layers before conv_3
                 break
             for params in child.parameters():
-                params.requires_grad = False
+                params.requires_grad = True
+            # all layer need be trained in Noc
         logging.debug(f"Train only layer3 and layer4 of the {backbone_name}, freeze the previous ones")
         layers = list(backbone.children())[:-2]  # Remove avg pooling and FC layer
     

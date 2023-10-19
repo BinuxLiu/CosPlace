@@ -66,6 +66,7 @@ class TestDataset(data.Dataset):
     
     def __getitem__(self, index):
         image_path = self.images_paths[index]
+        # print(image_path)
         pil_img = open_image(image_path)
         normalized_img = self.base_transform(pil_img)
         return normalized_img, index

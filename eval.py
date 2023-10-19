@@ -39,25 +39,56 @@ else:
 
 model = model.to(args.device)
 
-if args.dataset_folder.split("/")[-3] == "sf_xl":
 
+if args.use_kd:
+    # test_ds = TeachDataset(args.train_set_folder)
+    # test.test_for_teach(args, test_ds, model)
+
+    args.val_set_folder = os.path.join(args.dataset_folder, "val")
+    if not os.path.exists(args.val_set_folder):
+        raise FileNotFoundError(f"Folder {args.val_set_folder} does not exist")
+    
+    val_ds = TestDataset(args.val_set_folder, positive_dist_threshold=args.positive_dist_threshold)
+
+    recalls, recalls_str = test.test(args, val_ds, model)
+    logging.info(f"{val_ds}: {recalls_str}")
+
+else:
+
+    if args.dataset_folder.split("/")[-3] == "sf_xl":
+
+        test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1",
+                            positive_dist_threshold=args.positive_dist_threshold)
+
+        recalls, recalls_str = test.test(args, test_ds, model)
+        logging.info(f"{test_ds}: {recalls_str}")
+
+    elif args.dataset_folder.split("/")[-3] == "tokyo247":
+
+        test_ds = TestDataset(args.test_set_folder, queries_folder="queries",
+                            positive_dist_threshold=args.positive_dist_threshold)
+
+        recalls, recalls_str, recalls_day, recalls_sunset, recalls_night = test.test_tokyo(args, test_ds, model)
+
+        logging.info(f"Recalls on {test_ds}: {recalls_str}")
+        logging.info(f"Recalls on {test_ds}: {recalls_day}")
+        logging.info(f"Recalls on {test_ds}: {recalls_sunset}")
+        logging.info(f"Recalls on {test_ds}: {recalls_night}")
+
+
+    elif args.dataset_folder.split("/")[-3] == "svox":
         test_ds = TestDataset(args.test_set_folder, queries_folder="queries_night",
                             positive_dist_threshold=args.positive_dist_threshold)
 
         recalls, recalls_str = test.test(args, test_ds, model)
         logging.info(f"{test_ds}: {recalls_str}")
 
-elif args.dataset_folder.split("/")[-3] == "tokyo247":
-    test_ds = TestDataset(args.test_set_folder, queries_folder="queries",
-                        positive_dist_threshold=args.positive_dist_threshold)
+    elif args.dataset_folder.split("/")[-3] == "msls":
+        test_ds = TestDataset(args.test_set_folder, queries_folder="queries_night",
+                            positive_dist_threshold=args.positive_dist_threshold)
 
-    recalls, recalls_str, recalls_day, recalls_sunset, recalls_night = test.test_tokyo(args, test_ds, model)
+        recalls, recalls_str = test.test(args, test_ds, model)
+        logging.info(f"{test_ds}: {recalls_str}")
 
-    logging.info(f"Recalls on {test_ds}: {recalls_str}")
-    logging.info(f"Recalls on {test_ds}: {recalls_day}")
-    logging.info(f"Recalls on {test_ds}: {recalls_sunset}")
-    logging.info(f"Recalls on {test_ds}: {recalls_night}")
 
-if args.use_kd:
-    test_ds = TeachDataset(args.train_set_folder)
-    test.test_for_teach(args, test_ds, model)
+

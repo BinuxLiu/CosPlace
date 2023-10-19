@@ -9,6 +9,8 @@ from argparse import Namespace
 from torch.utils.data.dataset import Subset
 from torch.utils.data import DataLoader, Dataset
 
+import os
+
 
 # Compute R@1, R@5, R@10, R@20
 RECALL_VALUES = [1, 5, 10, 20]
@@ -24,10 +26,18 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.
         database_dataloader = DataLoader(dataset=database_subset_ds, num_workers=args.num_workers,
                                          batch_size=args.infer_batch_size, pin_memory=(args.device == "cuda"))
         all_descriptors = np.empty((len(eval_ds), args.fc_output_dim), dtype="float32")
-        for images, indices in tqdm(database_dataloader, ncols=100):
-            descriptors = model(images.to(args.device))
-            descriptors = descriptors.cpu().numpy()
-            all_descriptors[indices.numpy(), :] = descriptors
+
+        database_descriptors_dir = os.path.join(eval_ds.dataset_folder, "database_descriptors.npy")
+        if os.path.isfile(database_descriptors_dir) == 1:
+            database_descriptors = np.load(database_descriptors_dir)
+        else: 
+            for images, indices in tqdm(database_dataloader, ncols=100):
+                descriptors = model(images.to(args.device))
+                descriptors = descriptors.cpu().numpy()
+                all_descriptors[indices.numpy(), :] = descriptors
+
+            database_descriptors = all_descriptors[:eval_ds.database_num]
+            np.save(database_descriptors_dir, database_descriptors)
         
         logging.debug("Extracting queries descriptors for evaluation/testing using batch size 1")
         queries_infer_batch_size = 1
@@ -40,7 +50,7 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.
             all_descriptors[indices.numpy(), :] = descriptors
     
     queries_descriptors = all_descriptors[eval_ds.database_num:]
-    database_descriptors = all_descriptors[:eval_ds.database_num]
+    # database_descriptors = all_descriptors[:eval_ds.database_num]
     
     # Use a kNN to find predictions
     faiss_index = faiss.IndexFlatL2(args.fc_output_dim)
@@ -74,10 +84,18 @@ def test_tokyo(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tup
         database_dataloader = DataLoader(dataset=database_subset_ds, num_workers=args.num_workers,
                                          batch_size=args.infer_batch_size, pin_memory=(args.device == "cuda"))
         all_descriptors = np.empty((len(eval_ds), args.fc_output_dim), dtype="float32")
-        for images, indices in tqdm(database_dataloader, ncols=100):
-            descriptors = model(images.to(args.device))
-            descriptors = descriptors.cpu().numpy()
-            all_descriptors[indices.numpy(), :] = descriptors
+
+        database_descriptors_dir = os.path.join(args.test_set_folder, "database_descriptors.npy")
+        if os.path.isfile(database_descriptors_dir) == 1:
+            database_descriptors = np.load(database_descriptors_dir)
+        else: 
+            for images, indices in tqdm(database_dataloader, ncols=100):
+                descriptors = model(images.to(args.device))
+                descriptors = descriptors.cpu().numpy()
+                all_descriptors[indices.numpy(), :] = descriptors
+
+            database_descriptors = all_descriptors[:eval_ds.database_num]
+            np.save(database_descriptors_dir, database_descriptors)
         
         logging.debug("Extracting queries descriptors for evaluation/testing using batch size 1")
         queries_infer_batch_size = 1
@@ -90,7 +108,7 @@ def test_tokyo(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tup
             all_descriptors[indices.numpy(), :] = descriptors
     
     queries_descriptors = all_descriptors[eval_ds.database_num:]
-    database_descriptors = all_descriptors[:eval_ds.database_num]
+    # database_descriptors = all_descriptors[:eval_ds.database_num]
     
     # Use a kNN to find predictions
     faiss_index = faiss.IndexFlatL2(args.fc_output_dim)

@@ -128,9 +128,12 @@ for epoch_num in range(start_epoch_num, args.epochs_num):
             descriptors = model(images)
             output = classifiers[current_group_num](descriptors, targets)
             loss = criterion(output, targets)
+            # print(loss)
             if args.use_kd:
                 day_output = classifiers[current_group_num](day_descriptors, targets)
-                loss_kd = criterion_kd(output, day_output)
+                loss_kd = criterion_kd(output, day_output) * args.lambda_kd
+                loss = loss + loss_kd
+                # print(loss_kd)
             loss.backward()
             epoch_losses = np.append(epoch_losses, loss.item())
             del loss, output, images, day_descriptors

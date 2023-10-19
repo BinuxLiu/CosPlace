@@ -58,6 +58,7 @@ def parse_arguments(is_training: bool = True):
     parser.add_argument("--use_kd", action="store_true", 
                         help="extract teacher's features and build teacher-student model")
     parser.add_argument('--T', type=float, default=4.0, help='temperature for ST')
+    parser.add_argument("--lambda_kd", type=float, default=1.0, help = "hyper-parameter")
     
     
     args = parser.parse_args()

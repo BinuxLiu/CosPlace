@@ -94,7 +94,8 @@ class TrainDataset(torch.utils.data.Dataset):
         if self.use_kd:
             day_descriptor = np.load(image_path.replace("train", "train_feat").replace(".jpg", ".npy"))
         else:
-            day_descriptor = np.zeros(1,1)
+            # day_descriptor = np.zeros(1,1)
+            day_descriptor = np.zeros(1)
 
         return tensor_image, class_num, image_path, day_descriptor
     
