@@ -15,10 +15,61 @@ import os
 # Compute R@1, R@5, R@10, R@20
 RECALL_VALUES = [1, 5, 10, 20]
 
+def test_efficient_ram_usage(args: Namespace, eval_ds: Dataset, model: torch.nn.Module)-> Tuple[np.ndarray, str]:
+    
+    model = model.eval()
+    logging.debug("efficient_ram_testing")
+    distances = np.empty([eval_ds.queries_num, eval_ds.database_num], dtype=np.float32)
+    
+    with torch.no_grad():
+        queries_features = np.ones((eval_ds.queries_num, args.fc_output_dim), dtype="float32")
+        logging.debug("Extracting queries features for evaluation/testing")
+        queries_infer_batch_size = 1
+        queries_subset_ds = Subset(eval_ds, list(range(eval_ds.database_num, eval_ds.database_num+eval_ds.queries_num)))
+        queries_dataloader = DataLoader(dataset=queries_subset_ds, num_workers=args.num_workers,
+                                        batch_size=queries_infer_batch_size, pin_memory=(args.device == "cuda"))
+        for images, indices in tqdm(queries_dataloader, ncols=100):
+            features = model(images.to(args.device))
+            queries_features[indices.numpy()-eval_ds.database_num, :] = features.cpu().numpy()
+
+        queries_features = torch.tensor(queries_features).type(torch.float32).cuda()
+
+        logging.debug("Extracting database features for evaluation/testing")
+
+        database_subset_ds = Subset(eval_ds, list(range(eval_ds.database_num)))
+        database_dataloader = DataLoader(dataset=database_subset_ds, num_workers=args.num_workers,
+                                        batch_size=args.infer_batch_size, pin_memory=(args.device=="cuda"))
+        for inputs, indices in tqdm(database_dataloader, ncols=100):
+            inputs = inputs.to(args.device)
+            features = model(inputs)
+            for pn, (index, pred_feature) in enumerate(zip(indices, features)):
+                distances[:, index] = ((queries_features-pred_feature)**2).sum(1).cpu().numpy()
+        del features, queries_features, pred_feature
+
+
+    predictions = distances.argsort(axis=1)[:, :max(RECALL_VALUES)]
+    del distances
+
+    positives_per_query = eval_ds.get_positives()
+    # args.recall_values by default is [1, 5, 10, 20]
+    recalls = np.zeros(len(RECALL_VALUES))
+    for query_index, pred in enumerate(predictions):
+        for i, n in enumerate(RECALL_VALUES):
+            if np.any(np.in1d(pred[:n], positives_per_query[query_index])):
+                recalls[i:] += 1
+                break
+    
+    recalls = recalls / eval_ds.queries_num * 100
+    recalls_str = ", ".join([f"R@{val}: {rec:.1f}" for val, rec in zip(RECALL_VALUES, recalls)])
+    return recalls, recalls_str
+
 
 def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.ndarray, str]:
     """Compute descriptors of the given dataset and compute the recalls."""
     
+    if args.efficient_ram_testing:
+        return test_efficient_ram_usage(args, eval_ds, model)
+
     model = model.eval()
     with torch.no_grad():
         logging.debug("Extracting database descriptors for evaluation/testing")
@@ -85,7 +136,7 @@ def test_tokyo(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tup
                                          batch_size=args.infer_batch_size, pin_memory=(args.device == "cuda"))
         all_descriptors = np.empty((len(eval_ds), args.fc_output_dim), dtype="float32")
 
-        database_descriptors_dir = os.path.join(args.test_set_folder, "database_descriptors.npy")
+        database_descriptors_dir = os.path.join(args.test_set_folder, "database_descriptors_cos_512.npy")
         if os.path.isfile(database_descriptors_dir) == 1:
             database_descriptors = np.load(database_descriptors_dir)
         else: 

@@ -58,8 +58,8 @@ def get_backbone(backbone_name : str) -> Tuple[torch.nn.Module, int]:
     backbone = get_pretrained_torchvision_model(backbone_name)
     if backbone_name.startswith("ResNet"):
         for name, child in backbone.named_children():
-            if name == "layer3":  # Freeze layers before conv_3
-                break
+            # if name == "layer3":  # Freeze layers before conv_3
+            #     break
             for params in child.parameters():
                 params.requires_grad = True
             # all layer need be trained in Noc

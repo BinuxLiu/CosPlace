@@ -59,7 +59,7 @@ def parse_arguments(is_training: bool = True):
                         help="extract teacher's features and build teacher-student model")
     parser.add_argument('--T', type=float, default=4.0, help='temperature for ST')
     parser.add_argument("--lambda_kd", type=float, default=1.0, help = "hyper-parameter")
-    
+    parser.add_argument("--efficient_ram_testing", action='store_true', help="_")
     
     args = parser.parse_args()
     
@@ -74,9 +74,9 @@ def parse_arguments(is_training: bool = True):
     if not os.path.exists(args.dataset_folder):
         raise FileNotFoundError(f"Folder {args.dataset_folder} does not exist")
     
-    args.test_set_folder = os.path.join(args.dataset_folder, "test")
-    if not os.path.exists(args.test_set_folder):
-        raise FileNotFoundError(f"Folder {args.test_set_folder} does not exist")
+    # args.test_set_folder = os.path.join(args.dataset_folder, "test")
+    # if not os.path.exists(args.test_set_folder):
+    #     raise FileNotFoundError(f"Folder {args.test_set_folder} does not exist")
 
     if is_training:
         args.train_set_folder = os.path.join(args.dataset_folder, "train")

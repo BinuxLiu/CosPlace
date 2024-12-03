@@ -60,10 +60,9 @@ logging.info(f"The {len(groups)} groups have respectively the following number o
 logging.info(f"The {len(groups)} groups have respectively the following number of images {[g.get_images_num() for g in groups]}")
 
 val_ds = TestDataset(args.val_set_folder, positive_dist_threshold=args.positive_dist_threshold)
-test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1",
-                      positive_dist_threshold=args.positive_dist_threshold)
+
 logging.info(f"Validation set: {val_ds}")
-logging.info(f"Test set: {test_ds}")
+
 
 #### Resume
 if args.resume_train:
@@ -128,12 +127,11 @@ for epoch_num in range(start_epoch_num, args.epochs_num):
             descriptors = model(images)
             output = classifiers[current_group_num](descriptors, targets)
             loss = criterion(output, targets)
-            # print(loss)
+            # This is an early implementation of NocPlace.
             if args.use_kd:
                 day_output = classifiers[current_group_num](day_descriptors, targets)
                 loss_kd = criterion_kd(output, day_output) * args.lambda_kd
                 loss = loss + loss_kd
-                # print(loss_kd)
             loss.backward()
             epoch_losses = np.append(epoch_losses, loss.item())
             del loss, output, images, day_descriptors
@@ -175,12 +173,5 @@ for epoch_num in range(start_epoch_num, args.epochs_num):
 
 logging.info(f"Trained for {epoch_num+1:02d} epochs, in total in {str(datetime.now() - start_time)[:-7]}")
 
-#### Test best model on test set v1
-best_model_state_dict = torch.load(f"{output_folder}/best_model.pth")
-model.load_state_dict(best_model_state_dict)
-
-logging.info(f"Now testing on the test set: {test_ds}")
-recalls, recalls_str = test.test(args, test_ds, model)
-logging.info(f"{test_ds}: {recalls_str}")
 
 logging.info("Experiment finished (without any errors)")

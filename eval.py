@@ -41,8 +41,8 @@ model = model.to(args.device)
 
 
 if args.use_kd:
-    # test_ds = TeachDataset(args.train_set_folder)
-    # test.test_for_teach(args, test_ds, model)
+    test_ds = TeachDataset(args.train_set_folder)
+    test.test_for_teach(args, test_ds, model)
 
     args.val_set_folder = os.path.join(args.dataset_folder, "val")
     if not os.path.exists(args.val_set_folder):
@@ -57,7 +57,7 @@ else:
 
     if args.dataset_folder.split("/")[-3] == "sf_xl":
 
-        test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1",
+        test_ds = TestDataset(args.test_set_folder, queries_folder="queries_night",
                             positive_dist_threshold=args.positive_dist_threshold)
 
         recalls, recalls_str = test.test(args, test_ds, model)
